@@ -84,3 +84,8 @@ driver.quit()
 <div class="ContentList__info_area--bXx7n>
 <a class="ContentTitle__title_area--x24vt" href="/webtoon/list?titled=758037&tab=mon">
 <span class="ContentTitle__title--e3qXt"><span class="text">참교육</span></span>
+
+셀레니움
+크롬드라이버 설치
+익스플로러에 exe파일 넣기
+gitignore에 *.exe
