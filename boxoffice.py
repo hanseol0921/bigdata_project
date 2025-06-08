@@ -125,6 +125,7 @@ def main():
     viewer.set_date()  # 기본은 어제 날짜
     viewer.fetch_data()
 
+
     while True:
         print("\n==== 박스오피스 정보 메뉴 ====")
         print("1: 박스오피스 순위")
@@ -142,10 +143,23 @@ def main():
             if df.empty:
                 print("데이터가 없습니다.")
             else:
-                # 영화명 앞뒤 공백 제거
                 if '영화명' in df.columns:
                     df['영화명'] = df['영화명'].str.strip()
-                print(df.to_string(index=False))
+
+        # 각 열 너비 계산
+                columns = df.columns.tolist()
+                col_widths = [max(len(str(col)), df[col].astype(str).map(len).max()) for col in columns]
+
+        # 헤더 출력
+                header = "  ".join(col.ljust(width) for col, width in zip(columns, col_widths))
+                print(header)
+
+        # 데이터 행 출력
+                for _, row in df.iterrows():
+                    line = "  ".join(str(val).ljust(width) for val, width in zip(row, col_widths))
+                    print(line)
+
+
         else:
             print("올바른 번호를 입력해주세요.")
 
