@@ -146,18 +146,25 @@ def main():
                 if '영화명' in df.columns:
                     df['영화명'] = df['영화명'].str.strip()
 
-        # 각 열 너비 계산
-                columns = df.columns.tolist()
-                col_widths = [max(len(str(col)), df[col].astype(str).map(len).max()) for col in columns]
+                print("\n=== 결과 ===")
+                if choice == "1":
+                    print("순위 / 영화명")
+                    for _, row in df.iterrows():
+                        print(f"{row['순위']}위. {row['영화명']}")
+                        
 
-        # 헤더 출력
-                header = "  ".join(col.ljust(width) for col, width in zip(columns, col_widths))
-                print(header)
+                elif choice == "2":
+                    print("순위 / 영화명 / 예매율 / 일일관객수")
+                    for _, row in df.iterrows():
+                        print(f"{row['순위']}위. {row['영화명']} / {row['예매율']} / {row['일일관객수']}")
+                        print(" ")
 
-        # 데이터 행 출력
-                for _, row in df.iterrows():
-                    line = "  ".join(str(val).ljust(width) for val, width in zip(row, col_widths))
-                    print(line)
+                elif choice == "3":
+                    print("영화명 / 일일매출액 / 누적매출액 / 스크린수 / 상영횟수")
+                    for _, row in df.iterrows():
+                        print(f"{row['영화명']} / {row['일일매출액']} / {row['누적매출액']} / 스크린 {row['스크린수']}개 / {row['상영횟수']}회")
+
+
 
 
         else:
