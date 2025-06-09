@@ -1,6 +1,11 @@
 import requests
 import pandas as pd
 from datetime import datetime, timedelta
+import os
+import sys
+import urllib.request
+import json
+
 
 class BoxOfficeViewer:
     
@@ -109,6 +114,8 @@ class BoxOfficeViewer:
             return self.get_ticket_sales_rate()
         elif option == 3:
             return self.get_sales()
+        elif option == 4:
+            return n_blog()
         else:
             print("잘못된 옵션입니다. 1(순위), 2(예매율), 3(매출액) 중 하나를 선택하세요.")
             return []
@@ -116,6 +123,48 @@ class BoxOfficeViewer:
     def to_dataframe(self, option):
         data = self.get_info_by_option(option)
         return pd.DataFrame(data)
+
+
+
+def n_blog(search):
+    client_id = "m6nZpyW187lm1c7iMKSH"
+    client_secret = "OBrpyxklnJ"
+    encText = urllib.parse.quote(search)
+    url = "https://openapi.naver.com/v1/search/blog?query=" + encText # JSON 결과
+    # url = "https://openapi.naver.com/v1/search/blog.xml?query=" + encText # XML 결과
+    request = urllib.request.Request(url)
+    request.add_header("X-Naver-Client-Id",client_id)
+    request.add_header("X-Naver-Client-Secret",client_secret)
+    response = urllib.request.urlopen(request)
+    rescode = response.getcode()
+    json_data = ""
+    if(rescode==200):
+        response_body = response.read()
+        # print(response_body.decode('utf-8'))
+        json_data = response_body.decode('utf-8')
+    else:
+        print("Error Code:" + rescode)
+
+    # Parse the JSON data
+    data = json.loads(json_data)
+
+    # Extract the required information from the 'items' list
+    extracted_list = []
+    for item in data['items']:
+        extracted_item = {
+            "title": item.get("title", ""), 
+            "link": item.get("link", ""),
+            "description": item.get("description", ""),
+            "bloggername": item.get("bloggername", ""),
+            "postdate": item.get("postdate", "")
+        }
+        extracted_list.append(extracted_item)
+
+    # Print the extracted data
+    for item in extracted_list:
+        print("제목:", item['title'])
+        print("링크:", item['link'])
+
 
 def main():
     # 여기에 본인의 KOBIS API 키 입력!
@@ -131,6 +180,7 @@ def main():
         print("1: 박스오피스 순위")
         print("2: 예매율")
         print("3: 매출액")
+        print("4. 영화 검색")
         print("0: 종료")
         choice = input("번호 입력: ")
 
@@ -138,7 +188,7 @@ def main():
             print("프로그램을 종료합니다.")
             break
 
-        if choice in ["1", "2", "3"]:
+        if choice in ["1", "2", "3","4"]:
             df = viewer.to_dataframe(int(choice))
             if df.empty:
                 print("데이터가 없습니다.")
@@ -163,6 +213,11 @@ def main():
                     print("영화명 / 일일매출액 / 누적매출액 / 스크린수 / 상영횟수")
                     for _, row in df.iterrows():
                         print(f"{row['영화명']} / {row['일일매출액']} / {row['누적매출액']} / 스크린 {row['스크린수']}개 / {row['상영횟수']}회")
+                
+                elif choice == "4":
+                    print("네이버 맛집 검색")
+                    search = input("맛집 검색: ")
+                    n_blog(search)
 
 
 
@@ -172,3 +227,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
