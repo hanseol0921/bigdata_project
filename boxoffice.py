@@ -138,7 +138,6 @@ class BoxOfficeViewer:
             box_office_list = self.data['boxOfficeResult']['dailyBoxOfficeList']
             total_sales = sum(int(movie['salesAmt']) for movie in box_office_list)
 
-        # 입력값이 포함된 모든 후보 수집
             matches = []
             for movie in box_office_list:
                 if self.normalize(movie_name) in self.normalize(movie['movieNm']):
