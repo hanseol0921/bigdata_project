@@ -6,6 +6,7 @@ import sys
 import urllib.request
 import json
 import re
+import time
 
 
 class BoxOfficeViewer:
@@ -122,6 +123,42 @@ class BoxOfficeViewer:
     def to_dataframe(self, option):
         data = self.get_info_by_option(option)
         return pd.DataFrame(data)
+    
+
+    @staticmethod
+    def normalize(text):
+        return re.sub(r'\s+', '', text.strip().lower())
+
+    def get_movie_info_by_name(self, movie_name):
+        if not self.data:
+            if not self.fetch_data():
+                return None
+
+        try:
+            box_office_list = self.data['boxOfficeResult']['dailyBoxOfficeList']
+            total_sales = sum(int(movie['salesAmt']) for movie in box_office_list)
+
+            for movie in box_office_list:
+                if self.normalize(movie_name) in self.normalize(movie['movieNm']):
+                    target_movie = movie
+                    break
+
+            if target_movie:
+                sales_amt = int(target_movie['salesAmt'])
+                sales_rate = (sales_amt / total_sales * 100) if total_sales > 0 else 0
+                return {
+                    '영화명': target_movie['movieNm'],
+                    '예매율': f"{sales_rate:.2f}%",
+                    '일일매출액': format(sales_amt, ',') + '원',
+                    '누적매출액': format(int(target_movie['salesAcc']), ',') + '원',
+                    '스크린수': target_movie['scrnCnt'],
+                    '상영횟수': target_movie['showCnt'],
+                    '일일관객수': format(int(target_movie['audiCnt']), ',') + '명'
+                }
+            return None  
+        except Exception as e:
+            print("영화 정보 처리 중 오류:", e)
+            return None
 
 
 
@@ -166,20 +203,31 @@ def n_blog(search):
     return extracted_list
 
 def main():
-    # 여기에 본인의 KOBIS API 키 입력!
     API_KEY = "0dfd8752d1b4b76ed1d45011c6607d56"
 
     viewer = BoxOfficeViewer(api_key=API_KEY)
     viewer.set_date()  # 기본은 어제 날짜
     viewer.fetch_data()
 
+    while True:
+            print("※ 박스오피스는 선택한 날짜 기준으로 최대 10위까지 제공됩니다.")
+            date_input = input("조회할 날짜를 입력하세요 (예: 20250613): ").strip()
+
+            if not re.match(r'^\d{8}$', date_input):
+                print("날짜 형식이 올바르지 않습니다. 예: 20250613")
+                continue
+
+            viewer.set_date(date_input)
+            if viewer.fetch_data():
+                break
+            else:
+                print("해당 날짜의 데이터를 불러오는 데 실패했습니다. 다시 입력해주세요.")
 
     while True:
         print("\n==== 박스오피스 정보 메뉴 ====")
-        print("1: 박스오피스 순위")
-        print("2: 예매율")
-        print("3: 매출액")
-        print("4. 영화 검색")
+        print("1. 영화 박스오피스 순위")
+        print("2. 영화 박스오피스 정보 (예매율, 매출액)")
+        print("3. 영화 후기 검색 (네이버블로그)")
         print("0: 종료")
         choice = input("번호 입력: ")
 
@@ -188,33 +236,33 @@ def main():
             break
 
 
-        if choice in ["1", "2", "3"]:
-            df = viewer.to_dataframe(int(choice))
+        elif choice == "1":
+            df = viewer.to_dataframe(1)
             if df.empty:
                 print("데이터가 없습니다.")
             else:
-                if '영화명' in df.columns:
-                    df['영화명'] = df['영화명'].str.strip()
+                print(f"\n=== 박스오피스 순위 ({viewer.target_date}) ===")
+                for _, row in df.iterrows():
+                    print(f"{row['순위']}위. {row['영화명']}")
+            time.sleep(1)
+               
 
-                print("\n=== 결과 ===")
-                if choice == "1":
-                    print("순위 / 영화명")
-                    for _, row in df.iterrows():
-                        print(f"{row['순위']}위. {row['영화명']}")
-                        
+        elif choice == "2":
+            search_name = input("조회할 영화 제목을 입력하세요: ").strip()
+            result = viewer.get_movie_info_by_name(search_name)
 
-                elif choice == "2":
-                    print("순위 / 영화명 / 예매율 / 일일관객수")
-                    for _, row in df.iterrows():
-                        print(f"{row['순위']}위. {row['영화명']} / {row['예매율']} / {row['일일관객수']}")
-                        print(" ")
-
-                elif choice == "3":
-                    print("영화명 / 일일매출액 / 누적매출액 / 스크린수 / 상영횟수")
-                    for _, row in df.iterrows():
-                        print(f"{row['영화명']} / {row['일일매출액']} / {row['누적매출액']} / 스크린 {row['스크린수']}개 / 상영 {row['상영횟수']}회")
-
-        elif choice == "4":
+            if result:
+                print(f"\n=== '{result['영화명']}'의 정보 ({viewer.target_date}) ===")
+                print(f"예매율: {result['예매율']}")
+                print(f"일일매출액: {result['일일매출액']}")
+                print(f"누적매출액: {result['누적매출액']}")
+                print(f"스크린수: {result['스크린수']}개")
+                print(f"상영횟수: {result['상영횟수']}회")
+                print(f"일일관객수: {result['일일관객수']}")
+            else:
+                print("입력한 영화가 해당 날짜 박스오피스 목록에 없습니다.")
+            time.sleep(1)
+        elif choice == "3":
             print("\n영화 후기 검색 (네이버 블로그)")
             search = input("검색할 영화 제목 입력: ")
             blog_results = n_blog(search)
@@ -229,6 +277,7 @@ def main():
                     print("-" * 40)
             else:
                 print("블로그 검색 결과가 없습니다.")
+            time.sleep(1)
 
         else:
             print("올바른 번호를 입력해주세요.")
