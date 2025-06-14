@@ -7,7 +7,7 @@ import urllib.request
 import json
 import re
 import time
-
+from bs4 import BeautifulSoup
 
 class BoxOfficeViewer:
     
@@ -137,6 +137,7 @@ class BoxOfficeViewer:
         try:
             box_office_list = self.data['boxOfficeResult']['dailyBoxOfficeList']
             total_sales = sum(int(movie['salesAmt']) for movie in box_office_list)
+            target_movie = None
 
             for movie in box_office_list:
                 if self.normalize(movie_name) in self.normalize(movie['movieNm']):
@@ -147,6 +148,7 @@ class BoxOfficeViewer:
                 sales_amt = int(target_movie['salesAmt'])
                 sales_rate = (sales_amt / total_sales * 100) if total_sales > 0 else 0
                 return {
+                    'movieCd': target_movie['movieCd'],
                     '영화명': target_movie['movieNm'],
                     '예매율': f"{sales_rate:.2f}%",
                     '일일매출액': format(sales_amt, ',') + '원',
@@ -159,6 +161,49 @@ class BoxOfficeViewer:
         except Exception as e:
             print("영화 정보 처리 중 오류:", e)
             return None
+    def fetch_movie_info(self, movie_code):
+        if not self.api_key:
+            print("API 키가 설정되지 않았습니다.")
+            return None
+        
+        url = "http://www.kobis.or.kr/kobisopenapi/webservice/rest/movie/searchMovieInfo.json"
+        params = {
+            'key': self.api_key,
+            'movieCd': movie_code
+        }
+        
+        try:
+            response = requests.get(url, params=params)
+            response.raise_for_status()
+            movie_data = response.json()
+            movie_info = movie_data.get('movieInfoResult', {}).get('movieInfo', {})
+            
+            title = movie_info.get('movieNm', '정보 없음')
+            directors = movie_info.get('directors', [])
+            director_names = ', '.join(d.get('peopleNm', '') for d in directors) if directors else '정보 없음'
+            actors = movie_info.get('actors', [])
+            actor_names = ', '.join(a.get('peopleNm', '') for a in actors[:5]) if actors else '정보 없음'  # 최대 5명
+            plot = movie_info.get('showTm', '상영시간 정보 없음')  # 줄거리는 API에 없고 상영시간만 제공
+            open_dt = movie_info.get('openDt', '')
+            if open_dt and len(open_dt) == 8:
+                open_dt = f"{open_dt[:4]}년 {open_dt[4:6]}월 {open_dt[6:]}일"
+            elif not open_dt:
+                open_dt = '개봉일 정보 없음'
+            
+         # 줄거리 정보는 KOBIS API에 없으므로 "줄거리 정보 없음"으로 표시
+            return {
+                '제목': title,
+                '감독': director_names,
+                '출연': actor_names,
+                '상영시간': plot + '분',
+                '개봉일': open_dt,
+            
+            }
+            
+        except Exception as e:
+            print("영화 상세 정보 조회 중 오류:", e)
+            return None
+
 
 
 
@@ -202,6 +247,10 @@ def n_blog(search):
         
     return extracted_list
 
+
+
+
+
 def main():
     API_KEY = "0dfd8752d1b4b76ed1d45011c6607d56"
 
@@ -210,15 +259,16 @@ def main():
     viewer.fetch_data()
 
     while True:
-            print("※ 박스오피스는 선택한 날짜 기준으로 최대 10위까지 제공됩니다.")
             date_input = input("조회할 날짜를 입력하세요 (예: 20250613): ").strip()
-
             if not re.match(r'^\d{8}$', date_input):
                 print("날짜 형식이 올바르지 않습니다. 예: 20250613")
                 continue
 
             viewer.set_date(date_input)
             if viewer.fetch_data():
+                if not viewer.data['boxOfficeResult']['dailyBoxOfficeList']:
+                    print("해당 날짜에는 박스오피스 데이터가 없습니다. 다른 날짜를 입력해주세요.")
+                    continue
                 break
             else:
                 print("해당 날짜의 데이터를 불러오는 데 실패했습니다. 다시 입력해주세요.")
@@ -227,8 +277,10 @@ def main():
         print("\n==== 박스오피스 정보 메뉴 ====")
         print("1. 영화 박스오피스 순위")
         print("2. 영화 박스오피스 정보 (예매율, 매출액)")
-        print("3. 영화 후기 검색 (네이버블로그)")
+        print("3. 영화 정보")
+        print("4. 영화 후기 검색 (네이버블로그)")
         print("0: 종료")
+        print()
         choice = input("번호 입력: ")
 
         if choice == "0":
@@ -248,6 +300,7 @@ def main():
                
 
         elif choice == "2":
+            print()
             search_name = input("조회할 영화 제목을 입력하세요: ").strip()
             result = viewer.get_movie_info_by_name(search_name)
 
@@ -262,7 +315,30 @@ def main():
             else:
                 print("입력한 영화가 해당 날짜 박스오피스 목록에 없습니다.")
             time.sleep(1)
+
         elif choice == "3":
+            search_name = input("영화 제목을 입력하세요: ").strip()
+            result = viewer.get_movie_info_by_name(search_name)
+
+            if result:
+                movie_code = result.get('movieCd')
+                if movie_code:
+                    info = viewer.fetch_movie_info(movie_code)
+                    if info:
+                        print(f"\n=== '{info['제목']}' 영화 상세 정보 ===")
+                        print(f"감독: {info['감독']}")
+                        print(f"출연: {info['출연']}","등")
+                        print(f"상영시간: {info['상영시간']}")
+                        print(f"개봉일: {info['개봉일']}")
+                    else:
+                        print("상세 정보를 가져오지 못했습니다.")
+                else:
+                    print("해당 영화의 코드가 없습니다.")
+            else:
+                print("입력한 영화가 해당 날짜 박스오피스 목록에 없습니다.")
+            time.sleep(1)
+
+        elif choice == "4":
             print("\n영화 후기 검색 (네이버 블로그)")
             search = input("검색할 영화 제목 입력: ")
             blog_results = n_blog(search)
