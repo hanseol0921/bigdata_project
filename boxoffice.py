@@ -5,6 +5,7 @@ import os
 import sys
 import urllib.request
 import json
+import re
 
 
 class BoxOfficeViewer:
@@ -114,8 +115,6 @@ class BoxOfficeViewer:
             return self.get_ticket_sales_rate()
         elif option == 3:
             return self.get_sales()
-        elif option == 4:
-            return n_blog()
         else:
             print("잘못된 옵션입니다. 1(순위), 2(예매율), 3(매출액) 중 하나를 선택하세요.")
             return []
@@ -150,21 +149,21 @@ def n_blog(search):
 
     # Extract the required information from the 'items' list
     extracted_list = []
-    for item in data['items']:
+    for item in data.get('items', []):   # 여기를 수정했습니다
+        
+        title = re.sub(r'<.*?>', '', item.get("title", ""))
+        description = re.sub(r'<.*?>', '', item.get("description", ""))
+
         extracted_item = {
-            "title": item.get("title", ""), 
+            "title": title,
             "link": item.get("link", ""),
-            "description": item.get("description", ""),
+            "description": description,
             "bloggername": item.get("bloggername", ""),
             "postdate": item.get("postdate", "")
         }
         extracted_list.append(extracted_item)
-
-    # Print the extracted data
-    for item in extracted_list:
-        print("제목:", item['title'])
-        print("링크:", item['link'])
-
+        
+    return extracted_list
 
 def main():
     # 여기에 본인의 KOBIS API 키 입력!
@@ -188,7 +187,8 @@ def main():
             print("프로그램을 종료합니다.")
             break
 
-        if choice in ["1", "2", "3","4"]:
+
+        if choice in ["1", "2", "3"]:
             df = viewer.to_dataframe(int(choice))
             if df.empty:
                 print("데이터가 없습니다.")
@@ -212,15 +212,23 @@ def main():
                 elif choice == "3":
                     print("영화명 / 일일매출액 / 누적매출액 / 스크린수 / 상영횟수")
                     for _, row in df.iterrows():
-                        print(f"{row['영화명']} / {row['일일매출액']} / {row['누적매출액']} / 스크린 {row['스크린수']}개 / {row['상영횟수']}회")
-                
-                elif choice == "4":
-                    print("네이버 맛집 검색")
-                    search = input("맛집 검색: ")
-                    n_blog(search)
+                        print(f"{row['영화명']} / {row['일일매출액']} / {row['누적매출액']} / 스크린 {row['스크린수']}개 / 상영 {row['상영횟수']}회")
 
+        elif choice == "4":
+            print("\n영화 후기 검색 (네이버 블로그)")
+            search = input("검색할 영화 제목 입력: ")
+            blog_results = n_blog(search)
 
-
+            if blog_results:
+                print(f"\n=== '{search}' 관련 블로그 글 ===")
+                for item in blog_results:
+                    print(f"제목: {item['title']}")
+                    print(f"링크: {item['link']}")
+                    print(f"작성자: {item['bloggername']}")
+                    print(f"작성일: {item['postdate']}")
+                    print("-" * 40)
+            else:
+                print("블로그 검색 결과가 없습니다.")
 
         else:
             print("올바른 번호를 입력해주세요.")
