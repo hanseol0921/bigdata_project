@@ -361,7 +361,7 @@ def main():
             print("\n영화 후기 검색 (네이버 블로그)")
             search = input("검색할 영화 제목 입력: ").strip()
             if "영화" not in search:
-                search = f"{search} 영화"
+                search = f"{search} 영화 후기"
             blog_results = n_blog(search)
 
             if blog_results:
