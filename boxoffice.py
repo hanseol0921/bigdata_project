@@ -59,7 +59,7 @@ class BoxOfficeViewer:
             for movie in box_office_list:
                 ranking_info.append({
                     '순위': movie['rank'],
-                    '영화명': movie['movieNm'],  # 영화 제목만 반환
+                    '영화명': movie['movieNm'], 
                 })
             return ranking_info
         except (KeyError, ValueError) as e:
@@ -159,7 +159,6 @@ class BoxOfficeViewer:
             elif len(matches) == 1:
                 return matches[0]
             else:
-                # 여러 후보가 있을 경우 사용자 선택
                 print("\n여러 개의 영화가 검색되었습니다. 번호를 선택하세요:")
                 for idx, m in enumerate(matches, 1):
                     print(f"{idx}. {m['영화명']}")
@@ -197,15 +196,14 @@ class BoxOfficeViewer:
             directors = movie_info.get('directors', [])
             director_names = ', '.join(d.get('peopleNm', '') for d in directors) if directors else '정보 없음'
             actors = movie_info.get('actors', [])
-            actor_names = ', '.join(a.get('peopleNm', '') for a in actors[:5]) if actors else '정보 없음'  # 최대 5명
-            plot = movie_info.get('showTm', '상영시간 정보 없음')  # 줄거리는 API에 없고 상영시간만 제공
+            actor_names = ', '.join(a.get('peopleNm', '') for a in actors[:5]) if actors else '정보 없음' 
+            plot = movie_info.get('showTm', '상영시간 정보 없음') 
             open_dt = movie_info.get('openDt', '')
             if open_dt and len(open_dt) == 8:
                 open_dt = f"{open_dt[:4]}년 {open_dt[4:6]}월 {open_dt[6:]}일"
             elif not open_dt:
                 open_dt = '개봉일 정보 없음'
             
-         # 줄거리 정보는 KOBIS API에 없으므로 "줄거리 정보 없음"으로 표시
             return {
                 '제목': title,
                 '감독': director_names,
@@ -226,8 +224,7 @@ def n_blog(search):
     client_id = "m6nZpyW187lm1c7iMKSH"
     client_secret = "OBrpyxklnJ"
     encText = urllib.parse.quote(search)
-    url = "https://openapi.naver.com/v1/search/blog?query=" + encText # JSON 결과
-    # url = "https://openapi.naver.com/v1/search/blog.xml?query=" + encText # XML 결과
+    url = "https://openapi.naver.com/v1/search/blog?query=" + encText 
     request = urllib.request.Request(url)
     request.add_header("X-Naver-Client-Id",client_id)
     request.add_header("X-Naver-Client-Secret",client_secret)
@@ -236,17 +233,14 @@ def n_blog(search):
     json_data = ""
     if(rescode==200):
         response_body = response.read()
-        # print(response_body.decode('utf-8'))
         json_data = response_body.decode('utf-8')
     else:
         print("Error Code:" + rescode)
 
-    # Parse the JSON data
     data = json.loads(json_data)
 
-    # Extract the required information from the 'items' list
     extracted_list = []
-    for item in data.get('items', []):   # 여기를 수정했습니다
+    for item in data.get('items', []):
         
         title = re.sub(r'<.*?>', '', item.get("title", ""))
         description = re.sub(r'<.*?>', '', item.get("description", ""))
@@ -270,7 +264,7 @@ def main():
     API_KEY = "0dfd8752d1b4b76ed1d45011c6607d56"
 
     viewer = BoxOfficeViewer(api_key=API_KEY)
-    viewer.set_date()  # 기본은 어제 날짜
+    viewer.set_date()
     viewer.fetch_data()
 
     while True:
@@ -346,7 +340,7 @@ def main():
                     if info:
                         print(f"\n=== 🎬 '{info['제목']}' 영화 상세 정보 ===")
                         print(f"감독: {info['감독']}")
-                        print(f"출연: {info['출연']}","등")
+                        print(f"출연: {info['출연']}")
                         print(f"상영시간: {info['상영시간']}")
                         print(f"개봉일: {info['개봉일']}")
                     else:
