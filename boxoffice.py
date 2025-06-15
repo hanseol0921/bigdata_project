@@ -29,7 +29,7 @@ class BoxOfficeViewer:
         
     def fetch_data(self):
         if not self.api_key:
-            print("API 키가 설정되지 않았습니다. set_api_key() 메서드를 사용하여 API 키를 설정하세요.")
+            print("⚠️ API 키가 설정되지 않았습니다. set_api_key() 메서드를 사용하여 API 키를 설정하세요.")
             return False
             
         if not self.target_date:
@@ -46,7 +46,7 @@ class BoxOfficeViewer:
             self.data = response.json()
             return True
         except requests.exceptions.RequestException as e:
-            print(f"데이터 요청 중 오류가 발생했습니다: {e}")
+            print(f"⚠️ 데이터 요청 중 오류가 발생했습니다: {e}")
             return False
             
     def get_ranking(self):
@@ -63,7 +63,7 @@ class BoxOfficeViewer:
                 })
             return ranking_info
         except (KeyError, ValueError) as e:
-            print(f"순위 정보 처리 중 오류가 발생했습니다: {e}")
+            print(f"⚠️ 순위 정보 처리 중 오류가 발생했습니다: {e}")
             return []
             
     def get_ticket_sales_rate(self):
@@ -85,7 +85,7 @@ class BoxOfficeViewer:
                 })
             return ticket_sales_info
         except (KeyError, ValueError) as e:
-            print(f"예매율 정보 처리 중 오류가 발생했습니다: {e}")
+            print(f"⚠️ 예매율 정보 처리 중 오류가 발생했습니다: {e}")
             return []
             
     def get_sales(self):
@@ -106,19 +106,15 @@ class BoxOfficeViewer:
                 })
             return sales_info
         except (KeyError, ValueError) as e:
-            print(f"매출액 정보 처리 중 오류가 발생했습니다: {e}")
+            print(f"⚠️ 매출액 정보 처리 중 오류가 발생했습니다: {e}")
             return []
-            
+        
     def get_info_by_option(self, option):
         if option == 1:
             return self.get_ranking()
-        elif option == 2:
-            return self.get_ticket_sales_rate()
-        elif option == 3:
-            return self.get_sales()
         else:
             print("잘못된 옵션입니다. 0 ~ 4 중 하나를 선택하세요.")
-            return []
+            return []        
             
     def to_dataframe(self, option):
         data = self.get_info_by_option(option)
@@ -168,7 +164,7 @@ class BoxOfficeViewer:
                         if 1 <= sel <= len(matches):
                             return matches[sel - 1]
                         else:
-                            print("올바른 번호를 입력하세요.")
+                            print("⚠️ 올바른 번호를 입력하세요.")
                     except ValueError:
                         print("숫자를 입력하세요.")
         except Exception as e:
@@ -268,43 +264,45 @@ def main():
     viewer.fetch_data()
 
     while True:
-            date_input = input("박스오피스에서 조회할 날짜를 입력하세요 (예: 20250613): ").strip()
-            print("\n>> 박스오피스 데이터 불러오는 중...\n")
+            print("🎉 영화 매뉴얼에 오신 것을 환영합니다!\n")
+            time.sleep(1)
+            date_input = input("🗓️  박스오피스 데이터를 조회할 날짜를 입력하세요 (예: 20250613): ").strip()
+            print("\n⏳ 박스오피스 데이터 불러오는 중...\n")
             if not re.match(r'^\d{8}$', date_input):
-                print("날짜 형식이 올바르지 않습니다. 예: 20250613")
+                print("⚠️ 날짜 형식이 올바르지 않습니다. 예: 20250613")
                 continue
 
             viewer.set_date(date_input)
             if viewer.fetch_data():
-                print("\n>> 박스오피스 데이터 불러오는 중...\n")
+                print("⏳ 박스오피스 데이터 불러오는 중...\n")
                 time.sleep(1)
                 if not viewer.data['boxOfficeResult']['dailyBoxOfficeList']:
-                    print("해당 날짜에는 박스오피스 데이터가 없습니다. 다른 날짜를 입력해주세요.")
+                    print("🚫 해당 날짜에는 박스오피스 데이터가 없습니다. 다른 날짜를 입력해주세요.")
                     continue
                 break
             
             else:
-                print("해당 날짜의 데이터를 불러오는 데 실패했습니다. 다시 입력해주세요.")
+                print("😢 해당 날짜의 데이터를 불러오는 데 실패했습니다. 다시 입력해주세요.\n")
 
     while True:
         print("\n==== 영화 정보 메뉴 ====")
         print("1. 🥇 박스오피스 TOP10")
         print("2. 📊 흥행 성적 검색")
-        print("3. 🎬 정보 검색")
+        print("3. 🎬 상세 정보 검색")
         print("4. 📝 후기 검색")
         print("0. ❌ 종료")
         print()
-        choice = input("번호 입력: ")
+        choice = input("💬 번호를 입력하세요: ")
 
         if choice == "0":
-            print("프로그램을 종료합니다.")
+            print("\n프로그램을 종료합니다.")
             break
 
 
         elif choice == "1":
             df = viewer.to_dataframe(1)
             if df.empty:
-                print("데이터가 없습니다.")
+                print("🚫 데이터가 없습니다.")
             else:
                 print(f"\n=== 🥇 박스오피스 TOP10 ({viewer.target_date}) ===")
                 for _, row in df.iterrows():
@@ -313,24 +311,23 @@ def main():
                
 
         elif choice == "2":
-            print()
-            search_name = input("조회할 영화 제목을 입력하세요: ").strip()
+            search_name = input("\n💬 조회할 영화 제목을 입력하세요: ").strip()
             result = viewer.get_movie_info_by_name(search_name)
 
             if result:
                 print(f"\n=== 📊 '{result['영화명']}'의 흥행 성적 ({viewer.target_date}) ===")
-                print(f"예매율: {result['예매율']}")
-                print(f"일일매출액: {result['일일매출액']}")
-                print(f"누적매출액: {result['누적매출액']}")
-                print(f"스크린수: {result['스크린수']}개")
-                print(f"상영횟수: {result['상영횟수']}회")
-                print(f"일일관객수: {result['일일관객수']}")
+                print(f"🎟️ 예매율: {result['예매율']}")
+                print(f"💰 일일매출액: {result['일일매출액']}")
+                print(f"📦 누적매출액: {result['누적매출액']}")
+                print(f"🎬 스크린수: {result['스크린수']}개")
+                print(f"🎞️ 상영횟수: {result['상영횟수']}회")
+                print(f"👥 일일관객수: {result['일일관객수']}")
             else:
-                print("입력한 영화가 해당 날짜 박스오피스 목록에 없습니다.")
+                print("\n🚫 입력한 영화가 해당 날짜 박스오피스 목록에 없습니다.")
             time.sleep(2)
 
         elif choice == "3":
-            search_name = input("영화 제목을 입력하세요: ").strip()
+            search_name = input("\n💬 조회할 영화 제목을 입력하세요: ").strip()
             result = viewer.get_movie_info_by_name(search_name)
 
             if result:
@@ -339,39 +336,38 @@ def main():
                     info = viewer.fetch_movie_info(movie_code)
                     if info:
                         print(f"\n=== 🎬 '{info['제목']}' 영화 상세 정보 ===")
-                        print(f"감독: {info['감독']}")
-                        print(f"출연: {info['출연']}")
-                        print(f"상영시간: {info['상영시간']}")
-                        print(f"개봉일: {info['개봉일']}")
+                        print(f"🎥 감독: {info['감독']}")
+                        print(f"👥 출연: {info['출연']}")
+                        print(f"🕒 상영시간: {info['상영시간']}")
+                        print(f"🗓️ 개봉일: {info['개봉일']}")
                     else:
-                        print("상세 정보를 가져오지 못했습니다.")
+                        print("😢 상세 정보를 가져오지 못했습니다.")
                 else:
-                    print("해당 영화의 코드가 없습니다.")
+                    print("\n🚫 해당 영화의 코드가 없습니다.")
             else:
-                print("입력한 영화가 해당 날짜 박스오피스 목록에 없습니다.")
+                print("\n🚫 입력한 영화가 해당 날짜 박스오피스 목록에 없습니다.")
             time.sleep(2)
 
         elif choice == "4":
-            print("\n영화 후기 검색 (네이버 블로그)")
-            search = input("검색할 영화 제목 입력: ").strip()
+            search = input("\n💬 검색할 영화 제목을 입력하세요: ").strip()
             if "영화" not in search:
                 search = f"{search} 영화 후기"
             blog_results = n_blog(search)
 
             if blog_results:
-                print(f"\n=== 📝 '{search}' 관련 블로그 글 ===")
+                print(f"\n=== 📝 '{search}' 관련 블로그 글 ===\n")
                 for item in blog_results:
-                    print(f"제목: {item['title']}")
-                    print(f"링크: {item['link']}")
-                    print(f"작성자: {item['bloggername']}")
-                    print(f"작성일: {item['postdate']}")
+                    print(f"📌 제목: {item['title']}")
+                    print(f"🔗 링크: {item['link']}")
+                    print(f"👤 작성자: {item['bloggername']}")
+                    print(f"🗓️ 작성일: {item['postdate']}")
                     print("-" * 40)
             else:
-                print("블로그 검색 결과가 없습니다.")
+                print("🚫 블로그 검색 결과가 없습니다.")
             time.sleep(2)
 
         else:
-            print("올바른 번호를 입력해주세요.")
+            print("⚠️ 올바른 번호를 입력해주세요.")
 
 if __name__ == "__main__":
     main()
